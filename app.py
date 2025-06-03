@@ -71,5 +71,7 @@ def send_message(recipient_id, message_text):
     response = requests.post(url, headers=headers, params=params, json=payload)
     print("Message sent:", response.status_code, response.text)
 
+# Only used for local testing
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
+
