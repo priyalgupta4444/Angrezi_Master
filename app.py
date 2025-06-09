@@ -7,9 +7,9 @@ from flask import Flask, request
 app = Flask(__name__)
 
 # Replace with your own tokens
-VERIFY_TOKEN = 'master'
-PAGE_ACCESS_TOKEN = 'EAAf1LuaZAdXYBO3ElRpQU9QEyXGjNFInOcxfJT9erbqsR2ekk6MgRqWFvkrZCrlPEZBVWWNPRxAMSBQNNiiUGa2iZBYZCSZCPTTfpB34AHvW0ZBPkmKQHuG4pgpMxPTj88RyuOcyZCvGYsbaucVELzZCxU7zMbZCf8pqRK1i8tI8zo91MZAwVG1n4WHNSVvtvHqrvc8vIG3FoTMgGRD9cfx6VYlK0oaa3ZCXgXZCC' 
-PHONE_NUMBER_ID = '722691857585490'  # Replace this with your actual phone number ID
+VERIFY_TOKEN = 'masterzi'
+PAGE_ACCESS_TOKEN = 'EAAbfRdydpyUBO2a8Mqs1t1aFgYmik8YgBZBKIqLGk03FHQZBEDSFzrZC63wHOGiS7GnnESEcDSQ92ZBEPZB9ehHFJvlx4xG6LAmUM583IOEJZAYaOw1ZCE9nNBqhXshhJQMDMHkvUFilEP6MvjPSZBpTWvBsSZClHPOBsuybUOQMUn2My3T3gqZALQ1AGMibcdtamSz4fihfSZAIfgrZA3dnX1B5W5IglzrQPxMZD' 
+PHONE_NUMBER_ID = '707308075793480'  # Replace this with your actual phone number ID
 
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
