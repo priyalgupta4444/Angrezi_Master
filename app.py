@@ -45,48 +45,50 @@ def webhook():
             return "Verification failed", 403
 
     elif request.method == 'POST':
-        data = request.get_json()
-        print("Received POST data:", json.dumps(data, indent=4))
+    print("Webhook POST endpoint hit!")
+    data = request.get_json()
+    print("Received POST data:", json.dumps(data, indent=4))
 
-        # PRESERVED AZURE MESSAGE PROCESSING STRUCTURE
-        if data.get('object') == 'whatsapp_business_account':
-            for entry in data.get('entry', []):
-                for change in entry.get('changes', []):
-                    value = change.get('value', {})
-                    messages = value.get('messages', [])
-                    for message in messages:
-                        sender_id = message['from']
-                        if 'text' in message:
-                            message_text = message['text']['body']
-                            print(f"Received message: {message_text}")
+    if data.get('object') == 'whatsapp_business_account':
+        for entry in data.get('entry', []):
+            for change in entry.get('changes', []):
+                value = change.get('value', {})
+                messages = value.get('messages', [])
+                if not messages:
+                    print("No messages found in change object.")
+                for message in messages:
+                    sender_id = message['from']
+                    if 'text' in message:
+                        message_text = message['text']['body']
+                        print(f"Received message: {message_text}")
 
-                            # LLM PROCESSING - INTEGRATED WHILE PRESERVING FLOW
-                            try:
-                                memory = get_memory(sender_id)
-                                chat_history = memory.load_memory_variables({})['chat_history']
-                               
-                                response = chat_model.invoke([
-                                    SystemMessage(content="You're a helpful English teacher."),
-                                    *chat_history,
-                                    HumanMessage(content=message_text)
-                                ])
-                               
-                                # Save context
-                                memory.save_context(
-                                    {"input": message_text},
-                                    {"output": response.content}
-                                )
-                               
-                                # Send response using preserved Azure pattern
-                                print(f"Sending response to {sender_id}")
-                                send_message(sender_id, response.content)
-                               
-                            except Exception as e:
-                                print(f"Error in LLM processing: {str(e)}")
-                                # Fallback to echo pattern on error
-                                send_message(sender_id, f"Echo: {message_text}")
+                        # DEBUG: Send immediate test reply
+                        send_message(sender_id, "✅ Message received. LLM is processing...")
 
-        return "EVENT_RECEIVED", 200
+                        try:
+                            memory = get_memory(sender_id)
+                            chat_history = memory.load_memory_variables({})['chat_history']
+
+                            response = chat_model.invoke([
+                                SystemMessage(content="You're a helpful English teacher."),
+                                *chat_history,
+                                HumanMessage(content=message_text)
+                            ])
+                            
+                            print("LLM response:", response.content)
+
+                            memory.save_context(
+                                {"input": message_text},
+                                {"output": response.content}
+                            )
+
+                            send_message(sender_id, response.content)
+                        except Exception as e:
+                            print(f"❌ Error in LLM processing: {str(e)}")
+                            send_message(sender_id, f"Echo: {message_text}")
+    print("POST handled completely.")
+    return "EVENT_RECEIVED", 200
+
 
 def send_message(recipient_id, message_text):
     """PRESERVED AZURE MESSAGE SENDING PATTERN"""
