@@ -1,4 +1,4 @@
-#THIS IS A LOCAL SERVER HOSTEL ECHO WORKING MODEL. USED NGROK FLASK AND WHATSAPP WEBHOOKS
+#echo on azure
 
 import json
 import requests
@@ -10,6 +10,10 @@ app = Flask(__name__)
 VERIFY_TOKEN = 'masterzi'
 PAGE_ACCESS_TOKEN = 'EAAbfRdydpyUBO2a8Mqs1t1aFgYmik8YgBZBKIqLGk03FHQZBEDSFzrZC63wHOGiS7GnnESEcDSQ92ZBEPZB9ehHFJvlx4xG6LAmUM583IOEJZAYaOw1ZCE9nNBqhXshhJQMDMHkvUFilEP6MvjPSZBpTWvBsSZClHPOBsuybUOQMUn2My3T3gqZALQ1AGMibcdtamSz4fihfSZAIfgrZA3dnX1B5W5IglzrQPxMZD' 
 PHONE_NUMBER_ID = '707308075793480'  # Replace this with your actual phone number ID
+
+@app.route('/', methods=['GET'])
+def index():
+    return "WhatsApp bot is live!", 200
 
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
