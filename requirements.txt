@@ -3,3 +3,4 @@ requests
 gunicorn
 langchain
 langchain-openai
+python-dotenv
