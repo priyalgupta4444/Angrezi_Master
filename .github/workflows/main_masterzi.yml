@@ -31,5 +31,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'Masterzi'  # Change if your App Service name is different
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B43EEA6B7C494752A393E8047D772DD3 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: app.zip
