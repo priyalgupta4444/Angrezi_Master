@@ -104,8 +104,10 @@ def webhook():
 
 def send_whatsapp_message(recipient_id: str, message_text: str):
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
-    headers = {"Content-Type": "application/json"}
-    params = {"access_token": PAGE_ACCESS_TOKEN}
+    headers = {
+        "Authorization": f"Bearer {PAGE_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
     payload = {
         "messaging_product": "whatsapp",
         "to": recipient_id,
@@ -117,8 +119,8 @@ def send_whatsapp_message(recipient_id: str, message_text: str):
     }
 
     try:
-        response = requests.post(url, headers=headers, params=params, json=payload, timeout=10)
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
         response.raise_for_status()
         logger.info(f"Message sent successfully to {recipient_id}")
     except requests.RequestException as e:
-        logger.error(f"Failed to send message: {e}")
+        logger.error(f"Failed to send message: {e} | Response: {response.text}")
