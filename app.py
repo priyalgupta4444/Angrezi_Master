@@ -75,15 +75,15 @@ def webhook():
                             logger.info(f"Received from {sender_id}: {message_text}")
 
                             # Check if user exists
-                            cursor.execute("SELECT current_level FROM users WHERE user_id = %s", (sender_id,))
+                            cursor.execute("SELECT current_level_id FROM users WHERE user_id = %s", (sender_id,))
                             result = cursor.fetchone()
 
                             if result:
                                 current_level = result[0]
                             else:
                                 # Insert new user
-                                current_level = 1
-                                cursor.execute("INSERT INTO users (user_id, current_level) VALUES (%s, %s)", (sender_id, current_level))
+                                current_level_id = 1
+                                cursor.execute("INSERT INTO users (phone_number, current_level_id) VALUES (%s, %s)", (sender_id, current_level))
                                 conn.commit()
 
                             # Fetch question from level table
