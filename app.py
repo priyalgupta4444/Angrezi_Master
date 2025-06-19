@@ -3,11 +3,9 @@
 import os
 import json
 import logging
+import psycopg2
 import requests
 from flask import Flask, request, jsonify
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
 
 # Logging setup
@@ -17,34 +15,30 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv(override=True)
 
-# Fetch environment variables
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PAGE_ACCESS_TOKEN = os.getenv("PAGE_ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "masterzi")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o")
 
-# Validate essential environment variables
-if not all([OPENAI_API_KEY, PAGE_ACCESS_TOKEN, PHONE_NUMBER_ID]):
-    raise EnvironmentError("Missing required environment variables.")
+# PostgreSQL connection setup
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
 
-# Set up LangChain chat model and memory
-chat_model = ChatOpenAI(model=MODEL_NAME, temperature=0.7, api_key=OPENAI_API_KEY)
-user_memories = {}
+conn = psycopg2.connect(
+    host=DB_HOST,
+    dbname=DB_NAME,
+    user=DB_USER,
+    password=DB_PASS,
+    sslmode='require'
+)
+cursor = conn.cursor()
 
 app = Flask(__name__)
 
-def get_memory(user_id: str):
-    if user_id not in user_memories:
-        user_memories[user_id] = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
-    return user_memories[user_id]
-
 @app.route("/", methods=["GET"])
 def home():
-    return "Masterzi WhatsApp AI Assistant is running!", 200
+    return "Masterzi WhatsApp Bot is running!", 200
 
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
@@ -80,21 +74,27 @@ def webhook():
                         if sender_id and message_text:
                             logger.info(f"Received from {sender_id}: {message_text}")
 
-                            memory = get_memory(sender_id)
-                            chat_history = memory.load_memory_variables({})["chat_history"]
+                            # Check if user exists
+                            cursor.execute("SELECT current_level FROM users WHERE user_id = %s", (sender_id,))
+                            result = cursor.fetchone()
 
-                            # Call the LLM
-                            response = chat_model.invoke([
-                                SystemMessage(content="Your name is Masterzi. You are an encouraging and clear English teacher. Keep your responses friendly and focused on language learning."),
-                                *chat_history,
-                                HumanMessage(content=message_text)
-                            ])
+                            if result:
+                                current_level = result[0]
+                            else:
+                                # Insert new user
+                                current_level = 1
+                                cursor.execute("INSERT INTO users (user_id, current_level) VALUES (%s, %s)", (sender_id, current_level))
+                                conn.commit()
 
-                            # Save conversation
-                            memory.save_context({"input": message_text}, {"output": response.content})
+                            # Fetch question from level table
+                            cursor.execute("SELECT hindi_question FROM levels WHERE level_id = %s", (current_level,))
+                            level_row = cursor.fetchone()
 
-                            # Send LLM response
-                            send_whatsapp_message(sender_id, response.content)
+                            if level_row:
+                                hindi_question = level_row[0]
+                                send_whatsapp_message(sender_id, hindi_question)
+                            else:
+                                send_whatsapp_message(sender_id, "No question found for this level.")
 
             return "EVENT_RECEIVED", 200
 
