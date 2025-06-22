@@ -1,3 +1,5 @@
+
+
 # app.py
 
 #VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "masterzi")
@@ -8,6 +10,10 @@ import logging
 import requests
 import psycopg2
 from flask import Flask, request, jsonify
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain.memory import ConversationBufferMemory
+from dotenv import load_dotenv
 
 # --- Initialization and Configuration ---
 app = Flask(__name__)
@@ -17,7 +23,10 @@ app = Flask(__name__)
 VERIFY_TOKEN = os.environ.get('VERIFY_TOKEN')
 PAGE_ACCESS_TOKEN = os.environ.get('PAGE_ACCESS_TOKEN')
 PHONE_NUMBER_ID = os.environ.get('PHONE_NUMBER_ID')
-
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o")
+chat_model = ChatOpenAI(model=MODEL_NAME, temperature=0.7, api_key=OPENAI_API_KEY)
+user_memories = {}
 # Azure PostgreSQL database configuration
 DB_HOST = os.environ.get('DB_HOST')
 DB_NAME = os.environ.get('DB_NAME')
@@ -185,6 +194,11 @@ def process_user_message(sender_id, message_text):
                 # Quiz completed
                 send_whatsapp_message(sender_id, "Congratulations! You have completed all the levels. 🎉")
                 logging.info(f"User {sender_id} has completed all levels.")
+                send_whatsapp_message(sender_id, "You can now chat with Masterzi! Ask me anything about English or language learning.")
+                llm_response = get_llm_response(sender_id, message_text)
+                send_whatsapp_message(sender_id, llm_response)
+
+
         else:
             # Incorrect answer: provide correct answer and repeat the question
             logging.info(f"User {sender_id} answered incorrectly for level {current_level_id}.")
@@ -193,6 +207,29 @@ def process_user_message(sender_id, message_text):
                 f"Let's try that one again:\n{level_data['hindi_question']}"
             )
             send_whatsapp_message(sender_id, response_text)
+
+def get_memory(user_id: str):
+    if user_id not in user_memories:
+        user_memories[user_id] = ConversationBufferMemory(
+            memory_key="chat_history",
+            return_messages=True
+        )
+    return user_memories[user_id]
+
+# llm
+def get_llm_response(sender_id: str, message_text: str) -> str:
+    memory = get_memory(sender_id)
+    chat_history = memory.load_memory_variables({})["chat_history"]
+
+    response = chat_model.invoke([
+        SystemMessage(content="Your name is Masterzi. You are an encouraging and clear English teacher. Keep your responses friendly and focused on language learning."),
+        *chat_history,
+        HumanMessage(content=message_text)
+    ])
+
+    memory.save_context({"input": message_text}, {"output": response.content})
+    return response.content
+
 
 # --- Flask Webhook Route ---
 
