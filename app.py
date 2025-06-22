@@ -156,7 +156,7 @@ def send_whatsapp_message(recipient_id, message_text):
 def process_user_message(sender_id, message_text):
     """Handles the main logic for processing a user's message."""
     user = get_user(sender_id)
-
+    
     if not user:
         # New user: create them and send the first question
         logging.info(f"New user detected: {sender_id}. Creating user profile.")
@@ -168,6 +168,11 @@ def process_user_message(sender_id, message_text):
             logging.error("Could not find data for level 1.")
             send_whatsapp_message(sender_id, "Sorry, there was a problem starting the quiz. Please try again later.")
     else:
+        if user['current_level_id'] == -1:
+            llm_response = get_llm_response(sender_id, message_text)
+            send_whatsapp_message(sender_id, llm_response)
+            return
+
         # Existing user: check their answer
         current_level_id = user['current_level_id']
         level_data = get_level_data(current_level_id)
@@ -194,9 +199,11 @@ def process_user_message(sender_id, message_text):
                 # Quiz completed
                 send_whatsapp_message(sender_id, "Congratulations! You have completed all the levels. 🎉")
                 logging.info(f"User {sender_id} has completed all levels.")
-                send_whatsapp_message(sender_id, "You can now chat with Masterzi! Ask me anything about English or language learning.")
-                llm_response = get_llm_response(sender_id, message_text)
-                send_whatsapp_message(sender_id, llm_response)
+                update_user_level(sender_id, -1)
+                
+                #send_whatsapp_message(sender_id, "You can now chat with Masterzi! Ask me anything about English or language learning.")
+                #llm_response = get_llm_response(sender_id, message_text)
+                #send_whatsapp_message(sender_id, llm_response)
 
 
         else:
